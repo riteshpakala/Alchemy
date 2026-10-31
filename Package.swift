@@ -22,6 +22,9 @@ let package = Package(
         .target(
             name: "Alchemy",
             dependencies: ["Granite"],
+            // MuseService's voice: the phoneme front end and the Core ML models,
+            // copied whole (git lfs). Read through MuseVoiceAssets.
+            resources: [.copy("Resources/Voice")],
             swiftSettings: [
                 .enableUpcomingFeature("ApproachableConcurrency"),
             ],

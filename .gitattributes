@@ -1,0 +1,4 @@
+# MuseService's voice — the Core ML models, the G2P and the lexicons (~53 MB) —
+# tracks with git-lfs. This rule must exist BEFORE the first file lands, or the
+# blobs go into git history proper and cannot be pulled back out cheaply.
+Sources/Alchemy/Resources/Voice/** filter=lfs diff=lfs merge=lfs -text
