@@ -61,11 +61,12 @@ class MetalViewCoordinator: NSObject, MTKViewDelegate {
     }
     
     // Can use as display link on its own?
-    // Sample frame based on 60hz?
+    // Sample frame based on 120hz?
     func draw(in view: MTKView) {
         guard let currentTexture else { return }
         
-        let frame = Int(CFAbsoluteTimeGetCurrent() - base) % 60
+        let frame = (Int(CFAbsoluteTimeGetCurrent() - base) % (120 * 10)) / 120
+        // 0...1...n...10
         
         print("Frame count: \(frame)")
     }
