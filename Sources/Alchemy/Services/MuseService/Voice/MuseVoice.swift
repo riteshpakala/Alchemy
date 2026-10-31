@@ -19,6 +19,15 @@
 import CoreML
 import Foundation
 
+/*
+ 
+ Text == BERT encoder, phonemes
+ 
+ Acoustic == Pitch Curve and energy
+ 
+ */
+
+
 actor MuseVoice {
 
     struct Rendered: Sendable {

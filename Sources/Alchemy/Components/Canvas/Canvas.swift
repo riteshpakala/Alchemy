@@ -4,4 +4,5 @@ import Granite
 struct Canvas: GraniteComponent {
     @Command var center: Center
     @Relay var service: MetalService
+    @Relay(.silence) var muse: MuseService
 }

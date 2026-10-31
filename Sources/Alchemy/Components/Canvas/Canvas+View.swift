@@ -3,6 +3,8 @@ import SwiftUI
 
 extension Canvas: View {
     public var view: some View {
-        EmptyView()
+        EmbroideredPatch("Canvas") {
+            MetalViewUI(_state.model)
+        }
     }
 }

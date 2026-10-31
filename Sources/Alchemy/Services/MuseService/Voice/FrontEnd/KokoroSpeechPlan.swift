@@ -17,6 +17,7 @@
 
 import Foundation
 
+// TODO: need to look into the pause design, they are fixed, but can it measured in realtime?
 /// A designed silence between two pieces of speech, voiced edge to voiced edge.
 enum KokoroPause: String, Sendable, Equatable, CaseIterable {
     case none, word, clause, sentence, line, paragraph

@@ -13,6 +13,10 @@ extension Home: View {
                 error: muse.state.lastError,
                 stitching: isStitching)
                 .frame(maxHeight: .infinity, alignment: .top)
+            
+            if muse.state.samples.isEmpty == false {
+                Canvas()
+            }
         }
         .padding(28)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
