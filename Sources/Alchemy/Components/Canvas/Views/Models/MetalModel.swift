@@ -9,23 +9,27 @@ import Foundation
 import MetalKit
 import Granite
 
-struct MetalModel: @unchecked Sendable, GraniteModel {
+final class MetalModel: GraniteModel, @unchecked Sendable {
     static func == (lhs: MetalModel, rhs: MetalModel) -> Bool {
-        if lhs.texture != nil && rhs.texture != nil {
-            return ObjectIdentifier(lhs.texture!) == ObjectIdentifier(rhs.texture!)
-        } else {
-            return lhs.texture == nil && rhs.texture == nil
-        }
+        // Compare by render identity since textures are ephemeral
+        return ObjectIdentifier(lhs.render) == ObjectIdentifier(rhs.render)
     }
     
-    var texture: MTLTexture?
+    var render: MuseVoice.Rendered
+    // TODO: should the engine be in the model?
+    let engine: Engine
     
-    init() {
-        texture = nil
+    init(render: MuseVoice.Rendered, context: MetalContext) {
+        self.render = render
+        self.engine = Engine(context: context)
     }
     
     // Don't need it to conform to decoder/encoder because Canvas won't need to persist state to the disk.
     // Just need equatable to process view updates.
-    init(from decoder: any Decoder) throws {}
-    func encode(to encoder: any Encoder) throws {}
+    required init(from decoder: any Decoder) throws {
+        fatalError("init(from:) not implemented")
+    }
+    func encode(to encoder: any Encoder) throws {
+        fatalError("encode(to:) not implemented")
+    }
 }

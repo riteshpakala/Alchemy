@@ -13,6 +13,8 @@ class Engine {
     
     let context: MetalContext
     
+    // TODO: load the effect kernels into a catalogue of options
+    
     init(context: MetalContext) {
         self.context = context
     }

@@ -11,6 +11,7 @@ import SwiftUI
 class MetalViewCoordinator: NSObject, MTKViewDelegate {
     let base = CFAbsoluteTimeGetCurrent()
     var currentTexture: MTLTexture? = nil
+    weak var model: MetalModel?
     
     // TODO: Orientation
     func mtkView(_ view: MTKView,
@@ -21,7 +22,10 @@ class MetalViewCoordinator: NSObject, MTKViewDelegate {
     // Can use as display link on its own?
     // Sample frame based on 120hz?
     func draw(in view: MTKView) {
-        guard let currentTexture else { return }
+        guard let model else { return }
+        
+        // Process the render through the engine on each frame
+        model.engine.process(model.render)
         
         let frame = (Int(CFAbsoluteTimeGetCurrent() - base) % (120 * 10)) / 120
         // 0...1...n...10

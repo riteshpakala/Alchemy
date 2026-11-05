@@ -30,11 +30,16 @@ import Foundation
 
 actor MuseVoice {
 
-    struct Rendered: Sendable {
+    final class Rendered: @unchecked Sendable {
         /// Mono, −1…1, limited to KokoroSeamDSP.ceiling (0.95).
         var samples: [Float]
         var sampleRate: Double
         var seconds: Double { Double(samples.count) / sampleRate }
+        
+        init(samples: [Float], sampleRate: Double) {
+            self.samples = samples
+            self.sampleRate = sampleRate
+        }
     }
 
     private let phonemizer = KokoroPhonemizer()
