@@ -10,10 +10,13 @@ import MetalKit
 
 class MetalContext {
     let device: MTLDevice?
+    let library: MTLLibrary?
     let coordinator: MetalViewCoordinator
     
     init(_ coordinator: MetalViewCoordinator) {
-        self.device = MTLCreateSystemDefaultDevice()
+        let device = MTLCreateSystemDefaultDevice()
+        self.device = device
+        self.library = try? device?.makeDefaultLibrary(bundle: .module)
         self.coordinator = coordinator
     }
 }

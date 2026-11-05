@@ -43,10 +43,54 @@ class Engine {
             fatalError("Buffer could not be created.")
         }
         
+        // input texture should be a prefilled mixture?
+        guard let texture = createBaseTexture(device) else {
+            fatalError("Could not create texture.")
+        }
+        
+        let outputTexture = device.makeSimilarTexture(texture)
+        
+        
         let encoder = buffer.makeComputeCommandEncoder()
         
         
         buffer.waitUntilCompleted()
         
+    }
+    
+    func createDescriptor() -> MTLTextureDescriptor {
+        // TODO: width and height should scale with UI?
+        let descriptor = MTLTextureDescriptor.texture2DDescriptor(
+            pixelFormat: .bgra8Unorm,
+            width: 1080,
+            height: 1080,
+            mipmapped: false
+        )
+        
+        descriptor.storageMode = .shared
+        descriptor.usage = [.renderTarget, .shaderRead, .shaderWrite]
+        
+        return descriptor
+    }
+    
+    func createBaseTexture(_ device: MTLDevice?) -> MTLTexture? {
+        (device ?? context.device)?.makeTexture(descriptor: createDescriptor())
+    }
+}
+
+extension MTLDevice {
+    func makeSimilarTexture(_ texture: MTLTexture) -> MTLTexture? {
+        self.makeTexture(descriptor: texture.descriptor2D)
+    }
+}
+
+extension MTLTexture {
+    var descriptor2D: MTLTextureDescriptor {
+        .texture2DDescriptor(
+            pixelFormat: self.pixelFormat,
+            width: self.width,
+            height: self.height,
+            mipmapped: self.mipmapLevelCount > 1
+        )
     }
 }

@@ -10,7 +10,10 @@ import MetalKit
 
 protocol Effect {
     var kernel: EffectKernel { get set }
-    func process(_ render: MuseVoice.Rendered)
+    func process(_ render: MuseVoice.Rendered,
+                 inputTexture: MTLTexture,
+                 outputTexture: MTLTexture,
+                 sample: Float)
 }
 
 extension Effect {
@@ -19,28 +22,16 @@ extension Effect {
         if let device = kernel.context.device,
            let queue = device.makeCommandQueue(),
            let buffer = queue.makeCommandBuffer() {
+            do {
+                try device.makeDefaultLibrary(bundle: .module)
+            } catch let error {
+                print("Making device library: \(error)")
+            }
             return (device, queue, buffer)
         }
         
         return nil
     }
     
-    func createDescriptor() -> MTLTextureDescriptor {
-        // TODO: width and height should scale with UI?
-        let descriptor = MTLTextureDescriptor.texture2DDescriptor(
-            pixelFormat: .bgra8Unorm,
-            width: 1080,
-            height: 1080,
-            mipmapped: false
-        )
-        
-        descriptor.storageMode = .shared
-        descriptor.usage = [.renderTarget, .shaderRead, .shaderWrite]
-        
-        return descriptor
-    }
     
-    func createBaseTexture(_ device: MTLDevice?) -> MTLTexture? {
-        (device ?? kernel.context.device)?.makeTexture(descriptor: createDescriptor())
-    }
 }
