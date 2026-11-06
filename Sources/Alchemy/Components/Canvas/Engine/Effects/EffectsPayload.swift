@@ -11,7 +11,6 @@ import MetalKit
 /// Provides an `updating` helper to create variants with changed fields.
 struct EffectsPayload {
     let render: MuseVoice.Rendered
-    let buffer: MTLCommandBuffer
     let inputTexture: MTLTexture
     let outputTexture: MTLTexture
     let sample: Float
@@ -21,7 +20,6 @@ struct EffectsPayload {
     func updating(sample: Float? = nil, time: Float? = nil) -> EffectsPayload {
         EffectsPayload(
             render: render,
-            buffer: buffer,
             inputTexture: inputTexture,
             outputTexture: outputTexture,
             sample: sample ?? self.sample,

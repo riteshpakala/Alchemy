@@ -62,14 +62,6 @@ class Engine {
             return
         }
         
-        guard let queue = device.makeCommandQueue() else {
-            fatalError("Queue could not be created.")
-        }
-        
-        guard let buffer = queue.makeCommandBuffer() else {
-            fatalError("Buffer could not be created.")
-        }
-        
         // input texture should be a prefilled mixture?
         let texture: MTLTexture
         if let existingInput = inputTexture {
@@ -81,10 +73,7 @@ class Engine {
             // Fill the base texture with a solid warm amber color so shaders have data to sample
             fillTexture(
                 baseTexture,
-                outputTexture: drawable?.texture,
-                color: (r: 1.0, g: 0.85, b: 0.6, a: 1.0),
-                queue,
-                buffer
+                color: (r: 1.0, g: 0.85, b: 0.6, a: 1.0)
             )
             texture = baseTexture
         }
@@ -97,20 +86,19 @@ class Engine {
 //        timeBuffer?.contents().storeBytes(of: time, as: Float.self)
         
         // Create new output texture from current input
-//        guard let nextOutput = outputTexture ?? device.makeSimilarTexture(texture) else {
-//            fatalError("Could not create output texture.")
-//        }
-//        
-//        effects[effect]?.encode(
-//            EffectsPayload(
-//                render: render,
-//                buffer: buffer,
-//                inputTexture: texture,
-//                outputTexture: nextOutput,
-//                sample: time,
-//                time: time
-//            )
-//        )
+        guard let nextOutput = drawable?.texture ?? device.makeSimilarTexture(texture) else {
+            fatalError("Could not create output texture.")
+        }
+        
+        effects[effect]?.encode(
+            EffectsPayload(
+                render: render,
+                inputTexture: texture,
+                outputTexture: nextOutput,
+                sample: time,
+                time: time
+            )
+        )
     }
     
     func createDescriptor(from texture: MTLTexture?) -> MTLTextureDescriptor {
@@ -139,10 +127,15 @@ class Engine {
     private func fillTexture(
         _ texture: MTLTexture,
         outputTexture: MTLTexture? = nil,
-        color: (r: Float, g: Float, b: Float, a: Float),
-        _ queue: MTLCommandQueue,
-        _ buffer: MTLCommandBuffer
+        color: (r: Float, g: Float, b: Float, a: Float)
     ) {
+        guard let queue = context.device?.makeCommandQueue() else {
+            fatalError("Queue could not be created.")
+        }
+        
+        guard let buffer = queue.makeCommandBuffer() else {
+            fatalError("Buffer could not be created.")
+        }
         
         guard let encoder = buffer.makeComputeCommandEncoder() else {
             fatalError("Could not create compute encoder for texture fill.")

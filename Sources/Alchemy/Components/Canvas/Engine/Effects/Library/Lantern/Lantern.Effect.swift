@@ -26,11 +26,11 @@ struct Lantern: Effect {
     
     
     func encode(_ payload: EffectsPayload) {
-        guard let device = kernel.context.device else {
-            fatalError("Could not initialize Effect.")
+        guard let (device, queue, buffer) = self.initialize() else {
+            fatalError("Could not initialize.")
         }
         
-        guard let encoder = payload.buffer.makeComputeCommandEncoder() else {
+        guard let encoder = buffer.makeComputeCommandEncoder() else {
             fatalError("Could not create command encoder.")
         }
         
@@ -74,6 +74,7 @@ struct Lantern: Effect {
             )
         
         encoder.endEncoding()
-        payload.buffer.commit()
+        buffer.commit()
+        buffer.waitUntilCompleted()
     }
 }
