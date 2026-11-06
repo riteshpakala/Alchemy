@@ -13,6 +13,7 @@ class Engine {
     enum Catalogue: String {
         case whirl = "whirl"
         case lantern = "lantern"
+        case chromaKey = "chromaKey"
     }
     
     let context: MetalContext
@@ -73,6 +74,7 @@ class Engine {
             // Fill the base texture with a solid warm amber color so shaders have data to sample
             fillTexture(
                 baseTexture,
+                outputTexture: drawable?.texture,
                 color: (r: 1.0, g: 0.85, b: 0.6, a: 1.0)
             )
             texture = baseTexture
@@ -85,7 +87,7 @@ class Engine {
 //        time += 0.016
 //        timeBuffer?.contents().storeBytes(of: time, as: Float.self)
         
-        // Create new output texture from current input
+//         Create new output texture from current input
         guard let nextOutput = drawable?.texture ?? device.makeSimilarTexture(texture) else {
             fatalError("Could not create output texture.")
         }

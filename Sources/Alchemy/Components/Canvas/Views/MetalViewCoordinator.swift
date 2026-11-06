@@ -26,13 +26,10 @@ class MetalViewCoordinator: NSObject, MTKViewDelegate {
     func draw(in view: MTKView) {
         guard let model else { return }
         
-        
         // Process the render through the engine on each frame
         if let render {
             model.engine.process(render, drawable: view.currentDrawable)
         }
-        
-        
         
         // Present the drawable to the screen — this is what was missing
         // MTKViewDrawable has a present() method

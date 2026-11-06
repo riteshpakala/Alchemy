@@ -18,5 +18,5 @@ kernel void solidColorFill(
     constant float4& color [[buffer(0)]],
     uint2 gid [[thread_position_in_grid]]
 ) {
-    outputTexture.write(float4(0.0, 0.0, 1.0, 1.0), gid);
+    outputTexture.write(color, gid);
 }

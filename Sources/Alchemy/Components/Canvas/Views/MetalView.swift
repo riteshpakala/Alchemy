@@ -28,9 +28,12 @@ class MetalView: MTKView {
         self.framebufferOnly = false
         self.translatesAutoresizingMaskIntoConstraints = false
         self.layer?.backgroundColor = .clear
+        self.layer?.isOpaque = false
         self.clearColor = .init(red: 0, green: 0, blue: 0, alpha: 0)
         self.delegate = self.context.coordinator
+        
         self.isPaused = false
+        self.colorPixelFormat = .bgra8Unorm
     }
 }
 

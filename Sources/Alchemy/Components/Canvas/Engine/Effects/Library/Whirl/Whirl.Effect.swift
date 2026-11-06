@@ -34,7 +34,7 @@ struct Whirl: Effect {
 //            fatalError("Could not create command encoder.")
 //        }
         
-        guard let (device, queue, buffer) = self.initialize() else {
+        guard let (device, _, buffer) = self.initialize() else {
             return
         }
         
@@ -49,7 +49,7 @@ struct Whirl: Effect {
         // Make the buffer
         let floatBuffer = device.makeBuffer(length: MemoryLayout<Float>.size)
         
-        var mutableSample = payload.sample
+        let mutableSample = payload.sample
         
         // Store the float value into the mtlbuffer directly
         floatBuffer?
@@ -59,7 +59,7 @@ struct Whirl: Effect {
         // Make the buffer
         let timeBuffer = device.makeBuffer(length: MemoryLayout<Float>.size)
         
-        var mutableTime = payload.time
+        let mutableTime = payload.time
         
         // Store the float value into the mtlbuffer directly
         timeBuffer?

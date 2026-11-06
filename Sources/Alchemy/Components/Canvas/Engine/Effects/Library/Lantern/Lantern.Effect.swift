@@ -26,7 +26,7 @@ struct Lantern: Effect {
     
     
     func encode(_ payload: EffectsPayload) {
-        guard let (device, queue, buffer) = self.initialize() else {
+        guard let (device, _, buffer) = self.initialize() else {
             fatalError("Could not initialize.")
         }
         
@@ -41,7 +41,7 @@ struct Lantern: Effect {
         // Make the buffer
         let floatBuffer = device.makeBuffer(length: MemoryLayout<Float>.size)
         
-        var mutableSample = payload.sample
+        let mutableSample = payload.sample
         
         // Store the float value into the mtlbuffer directly
         floatBuffer?
@@ -51,7 +51,7 @@ struct Lantern: Effect {
         // Make the buffer
         let timeBuffer = device.makeBuffer(length: MemoryLayout<Float>.size)
         
-        var mutableTime = payload.time
+        let mutableTime = payload.time
         
         // Store the float value into the mtlbuffer directly
         timeBuffer?
@@ -64,9 +64,11 @@ struct Lantern: Effect {
         encoder.setBuffer(floatBuffer, offset: 0, index: 0)
         encoder.setBuffer(timeBuffer, offset: 0, index: 1)
         
+        
+        
         let width = payload.inputTexture.width
         let height = payload.inputTexture.height
-
+        
         encoder
             .dispatchThreadgroups(
                 .init(width: (width + 15) / 16, height: (height + 15) / 16, depth: 1),
