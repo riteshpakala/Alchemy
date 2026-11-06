@@ -26,11 +26,19 @@ struct Whirl: Effect {
     
     
     func encode(_ payload: EffectsPayload) {
-        guard let device = kernel.context.device else {
-            fatalError("Could not initialize Effect.")
+//        guard let device = kernel.context.device else {
+//            fatalError("Could not initialize Effect.")
+//        }
+//        
+//        guard let encoder = payload.buffer.makeComputeCommandEncoder() else {
+//            fatalError("Could not create command encoder.")
+//        }
+        
+        guard let (device, queue, buffer) = self.initialize() else {
+            return
         }
         
-        guard let encoder = payload.buffer.makeComputeCommandEncoder() else {
+        guard let encoder = buffer.makeComputeCommandEncoder() else {
             fatalError("Could not create command encoder.")
         }
         
@@ -74,6 +82,7 @@ struct Whirl: Effect {
             )
         
         encoder.endEncoding()
-        payload.buffer.commit()
+        buffer.commit()
+        buffer.waitUntilCompleted()
     }
 }

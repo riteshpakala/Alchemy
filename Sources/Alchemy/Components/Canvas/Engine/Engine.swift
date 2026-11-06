@@ -54,8 +54,8 @@ class Engine {
     func process(
         _ render: MuseVoice.Rendered,
         inputTexture: MTLTexture? = nil,
-        outputTexture: MTLTexture? = nil,
-        effect: Catalogue = .whirl
+        drawable: CAMetalDrawable? = nil,
+        effect: Catalogue = .lantern
     ) {
         guard let device = context.device else {
             fatalError("No device found.")
@@ -71,54 +71,117 @@ class Engine {
         }
         
         // input texture should be a prefilled mixture?
-        guard let texture = inputTexture ?? createBaseTexture(device) else {
-            fatalError("Could not create texture.")
+        let texture: MTLTexture
+        if let existingInput = inputTexture {
+            texture = existingInput
+        } else {
+            guard let baseTexture = createBaseTexture(device, texture: drawable?.texture) else {
+                fatalError("Could not create texture.")
+            }
+            // Fill the base texture with a solid warm amber color so shaders have data to sample
+            fillTexture(
+                baseTexture,
+                outputTexture: drawable?.texture,
+                color: (r: 1.0, g: 0.85, b: 0.6, a: 1.0),
+                queue,
+                buffer
+            )
+            texture = baseTexture
         }
         
-        let timeBuffer = device.makeBuffer(length: MemoryLayout<Float>.size)
-        
-        // Update time for animation
-        // "60fps"
-        time += 0.016
-        timeBuffer?.contents().storeBytes(of: time, as: Float.self)
+//        let timeBuffer = device.makeBuffer(length: MemoryLayout<Float>.size)
+//        
+//        // Update time for animation
+//        // "60fps"
+//        time += 0.016
+//        timeBuffer?.contents().storeBytes(of: time, as: Float.self)
         
         // Create new output texture from current input
-        guard let nextOutput = outputTexture ?? device.makeSimilarTexture(texture) else {
-            fatalError("Could not create output texture.")
-        }
-        
-        effects[effect]?.encode(
-            EffectsPayload(
-                render: render,
-                buffer: buffer,
-                inputTexture: texture,
-                outputTexture: nextOutput,
-                sample: time,
-                time: time
-            )
-        )
-        
-        buffer.waitUntilCompleted()
-        
+//        guard let nextOutput = outputTexture ?? device.makeSimilarTexture(texture) else {
+//            fatalError("Could not create output texture.")
+//        }
+//        
+//        effects[effect]?.encode(
+//            EffectsPayload(
+//                render: render,
+//                buffer: buffer,
+//                inputTexture: texture,
+//                outputTexture: nextOutput,
+//                sample: time,
+//                time: time
+//            )
+//        )
     }
     
-    func createDescriptor() -> MTLTextureDescriptor {
+    func createDescriptor(from texture: MTLTexture?) -> MTLTextureDescriptor {
         // TODO: width and height should scale with UI?
         let descriptor = MTLTextureDescriptor.texture2DDescriptor(
-            pixelFormat: .bgra8Unorm,
-            width: 1080,
-            height: 1080,
+            pixelFormat: texture?.pixelFormat ?? .bgra8Unorm,
+            width: texture?.width ?? 1080,
+            height: texture?.height ?? 1080,
             mipmapped: false
         )
         
-        descriptor.storageMode = .shared
+        descriptor.storageMode = texture?.storageMode ?? .shared
         descriptor.usage = [.renderTarget, .shaderRead, .shaderWrite]
         
         return descriptor
     }
     
-    func createBaseTexture(_ device: MTLDevice?) -> MTLTexture? {
-        (device ?? context.device)?.makeTexture(descriptor: createDescriptor())
+    func createBaseTexture(_ device: MTLDevice?, texture: MTLTexture? = nil) -> MTLTexture? {
+        (device ?? context.device)?.makeTexture(
+            descriptor: createDescriptor(from: texture)
+        )
+    }
+    
+    /// Fills a texture with a solid RGBA color using the Fill.solidColorFill kernel from the module.
+    /// Uses outputTexture dimensions directly instead of param buffers.
+    private func fillTexture(
+        _ texture: MTLTexture,
+        outputTexture: MTLTexture? = nil,
+        color: (r: Float, g: Float, b: Float, a: Float),
+        _ queue: MTLCommandQueue,
+        _ buffer: MTLCommandBuffer
+    ) {
+        
+        guard let encoder = buffer.makeComputeCommandEncoder() else {
+            fatalError("Could not create compute encoder for texture fill.")
+        }
+        
+        guard let device = context.device else {
+            return
+        }
+        
+        guard let lib = try? device.makeDefaultLibrary(bundle: .module),
+              let function = lib.makeFunction(name: "solidColorFill"),
+              let pipelineState = try? device.makeComputePipelineState(function: function) else {
+            fatalError("Could not load Fill.solidColorFill from module.")
+        }
+        
+        encoder.setComputePipelineState(pipelineState)
+        encoder.setTexture(texture, index: 0)  // input texture
+        encoder.setTexture(outputTexture ?? texture, index: 1)  // output texture (same as input for fill)
+        
+        let colorBuffer = device.makeBuffer(length: MemoryLayout<SIMD4<Float>>.size)
+        var mtlColor = SIMD4<Float>(color.r, color.g, color.b, color.a)
+        colorBuffer?.contents().storeBytes(of: mtlColor, as: SIMD4<Float>.self)
+        encoder.setBuffer(colorBuffer, offset: 0, index: 0)
+        
+        print(
+            "Output Texture: (\(outputTexture?.width), \(outputTexture?.height))"
+        )
+        
+        let width = (outputTexture ?? texture).width
+        let height = (outputTexture ?? texture).height
+        encoder.dispatchThreadgroups(
+            .init(width: (width + 15) / 16, height: (height + 15) / 16, depth: 1),
+            threadsPerThreadgroup: .init(width: min(16, width), height: min(16, height), depth: 1)
+        )
+        
+        encoder.endEncoding()
+        
+        buffer.commit()
+        buffer.waitUntilCompleted()
     }
 }
 
@@ -139,5 +202,12 @@ extension MTLTexture {
         descriptor.usage = self.usage
         descriptor.storageMode = self.storageMode
         return descriptor
+    }
+}
+
+extension MTLCommandBuffer {
+    func synchronize() {
+        self.commit()
+        self.waitUntilCompleted()
     }
 }

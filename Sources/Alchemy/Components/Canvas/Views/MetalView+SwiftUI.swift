@@ -26,7 +26,6 @@ struct MetalViewUI: NSViewRepresentable {
     // and model initializations via abstracted model patterns or
     // building systems like Relays.
     @Relay var muse: MuseService
-    @State private var view: MetalView?
     
     @Binding var model: MetalModel
     
@@ -36,9 +35,8 @@ struct MetalViewUI: NSViewRepresentable {
     
     func makeNSView(context: Context) -> some MetalView {
         // Initialize MetalView with self.context.coordinator directly, removing the TODO force-unwrap
-        let view = MetalView(context.coordinator)
-        self.view = view
         context.coordinator.model = model
+        let view = MetalView(context.coordinator)
         return view
     }
     
