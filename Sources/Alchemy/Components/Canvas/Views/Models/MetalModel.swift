@@ -12,15 +12,12 @@ import Granite
 final class MetalModel: GraniteModel, @unchecked Sendable {
     static func == (lhs: MetalModel, rhs: MetalModel) -> Bool {
         // Compare by render identity since textures are ephemeral
-        return ObjectIdentifier(lhs.render) == ObjectIdentifier(rhs.render)
+        return ObjectIdentifier(lhs.engine) == ObjectIdentifier(rhs.engine)
     }
-    
-    var render: MuseVoice.Rendered
     // TODO: should the engine be in the model?
     let engine: Engine
     
-    init(render: MuseVoice.Rendered, context: MetalContext) {
-        self.render = render
+    init(context: MetalContext) {
         self.engine = Engine(context: context)
     }
     

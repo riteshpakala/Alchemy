@@ -36,14 +36,19 @@ struct MetalViewUI: NSViewRepresentable {
     
     func makeNSView(context: Context) -> some MetalView {
         // Initialize MetalView with self.context.coordinator directly, removing the TODO force-unwrap
-        view = MetalView(context.coordinator)
+        let view = MetalView(context.coordinator)
+        self.view = view
         context.coordinator.model = model
-        return view!
+        return view
     }
     
     func updateNSView(_ nsView: NSViewType, context: Context) {
         // Model updates are handled by the coordinator's draw loop via Engine.process
         context.coordinator.model = model
+        context.coordinator.render = .init(
+            samples: muse.state.samples,
+            sampleRate: muse.state.sampleRate
+        )
     }
     
     func makeCoordinator() -> MetalViewCoordinator {

@@ -26,10 +26,12 @@ struct Whirl: Effect {
     
     
     func encode(_ render: MuseVoice.Rendered,
+                buffer: MTLCommandBuffer,
                  inputTexture: MTLTexture,
                  outputTexture: MTLTexture,
-                 sample: Float = 1.0) {
-        guard let (device, queue, buffer) = self.initialize() else {
+                 sample: Float = 1.0,
+                 time: Float = 0.0) {
+        guard let device = kernel.context.device else {
             fatalError("Could not initialize Effect.")
         }
         
@@ -51,10 +53,21 @@ struct Whirl: Effect {
             .contents()
             .storeBytes(of: mutableSample, as: Float.self)
         
+        // Make the buffer
+        let timeBuffer = device.makeBuffer(length: MemoryLayout<Float>.size)
+        
+        var mutableTime = time
+        
+        // Store the float value into the mtlbuffer directly
+        timeBuffer?
+            .contents()
+            .storeBytes(of: mutableTime, as: Float.self)
+        
         encoder.setComputePipelineState(pipelineState)
         encoder.setTexture(inputTexture, index: 0)
         encoder.setTexture(outputTexture, index: 1)
         encoder.setBuffer(floatBuffer, offset: 0, index: 0)
+        encoder.setBuffer(timeBuffer, offset: 0, index: 1)
         
         let width = inputTexture.width
         let height = inputTexture.height

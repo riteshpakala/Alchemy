@@ -12,10 +12,12 @@ import MetalKit
 class Engine {
     enum Catalogue: String {
         case whirl = "whirl"
+        case lantern = "lantern"
     }
     
     let context: MetalContext
     var effects: [Engine.Catalogue: Effect]
+    var time: Float = 0.0
     
     /*
      
@@ -32,7 +34,8 @@ class Engine {
     init(context: MetalContext) {
         self.context = context
         self.effects = [
-            .whirl : Whirl(context)
+            .whirl : Whirl(context),
+            .lantern: Lantern(context)
         ]
     }
     
@@ -50,6 +53,8 @@ class Engine {
     // TODO: Replace fatals with logs.
     func process(
         _ render: MuseVoice.Rendered,
+        inputTexture: MTLTexture? = nil,
+        outputTexture: MTLTexture? = nil,
         effect: Catalogue = .whirl
     ) {
         guard let device = context.device else {
@@ -66,45 +71,34 @@ class Engine {
         }
         
         // input texture should be a prefilled mixture?
-        guard let texture = createBaseTexture(device) else {
+        guard let texture = inputTexture ?? createBaseTexture(device) else {
             fatalError("Could not create texture.")
-        }
-        
-        // Load the whirl kernel from context.library
-        guard let whirlKernel = context.library?.makeFunction(name: "whirl") else {
-            fatalError("Could not find whirl kernel.")
         }
         
         let timeBuffer = device.makeBuffer(length: MemoryLayout<Float>.size)
         
-        var currentInput = texture
-        var time: Float = 0.0
+        // Update time for animation
+        // "60fps"
+        time += 0.016
+        timeBuffer?.contents().storeBytes(of: time, as: Float.self)
         
-        while true {
-            // Update time for animation
-            // "60fps"
-            time += 0.016
-            timeBuffer?.contents().storeBytes(of: time, as: Float.self)
-            
-            // Create new output texture from current input
-            guard let nextOutput = device.makeSimilarTexture(currentInput) else {
-                fatalError("Could not create output texture.")
-            }
-            
-            effects[effect]?
-                .encode(
-                    render,
-                    inputTexture: currentInput,
-                    outputTexture: nextOutput,
-                    sample: time
-                )
-            
-            
-            buffer.waitUntilCompleted()
-            
-            // Swap for next iteration
-            currentInput = nextOutput
+        // Create new output texture from current input
+        guard let nextOutput = outputTexture ?? device.makeSimilarTexture(texture) else {
+            fatalError("Could not create output texture.")
         }
+        
+        effects[effect]?
+            .encode(
+                render,
+                buffer: buffer,
+                inputTexture: texture,
+                outputTexture: nextOutput,
+                sample: time,
+                time: time
+            )
+        
+        
+        buffer.waitUntilCompleted()
         
     }
     
@@ -136,11 +130,14 @@ extension MTLDevice {
 
 extension MTLTexture {
     var descriptor2D: MTLTextureDescriptor {
-        .texture2DDescriptor(
+        let descriptor: MTLTextureDescriptor = .texture2DDescriptor(
             pixelFormat: self.pixelFormat,
             width: self.width,
             height: self.height,
             mipmapped: self.mipmapLevelCount > 1
         )
+        descriptor.usage = self.usage
+        descriptor.storageMode = self.storageMode
+        return descriptor
     }
 }

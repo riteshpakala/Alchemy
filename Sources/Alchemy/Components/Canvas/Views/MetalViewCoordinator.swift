@@ -12,6 +12,7 @@ class MetalViewCoordinator: NSObject, MTKViewDelegate {
     let base = CFAbsoluteTimeGetCurrent()
     var currentTexture: MTLTexture? = nil
     weak var model: MetalModel?
+    var render: MuseVoice.Rendered?
     
     // TODO: Orientation
     func mtkView(_ view: MTKView,
@@ -25,7 +26,9 @@ class MetalViewCoordinator: NSObject, MTKViewDelegate {
         guard let model else { return }
         
         // Process the render through the engine on each frame
-        model.engine.process(model.render)
+        if let render {
+            model.engine.process(render, outputTexture: view.currentDrawable?.texture)
+        }
         
         let frame = (Int(CFAbsoluteTimeGetCurrent() - base) % (120 * 10)) / 120
         // 0...1...n...10

@@ -31,8 +31,8 @@ kernel void whirl(
     texture2d<float, access::read> inputTexture,
     texture2d<float, access::write> outputTexture,
     device float* buffer [[buffer(0)]],
-    uint gid [[thread_index_in_threadgroup]],
-    constant float& time [[buffer(1)]]
+    constant float& time [[buffer(1)]],
+    uint gid [[thread_index_in_threadgroup]]
 ) {
     if (gid >= outputTexture.get_width() * outputTexture.get_height()) {
         return;

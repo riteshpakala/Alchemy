@@ -11,9 +11,11 @@ import MetalKit
 protocol Effect {
     var kernel: EffectKernel { get set }
     func encode(_ render: MuseVoice.Rendered,
-                 inputTexture: MTLTexture,
-                 outputTexture: MTLTexture,
-                 sample: Float)
+                buffer: MTLCommandBuffer,
+                inputTexture: MTLTexture,
+                outputTexture: MTLTexture,
+                sample: Float,
+                time: Float) // TODO: Move into a new viewModel
 }
 
 extension Effect {
