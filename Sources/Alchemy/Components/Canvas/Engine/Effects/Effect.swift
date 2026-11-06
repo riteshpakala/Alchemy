@@ -10,13 +10,10 @@ import MetalKit
 
 protocol Effect {
     var kernel: EffectKernel { get set }
-    func encode(_ render: MuseVoice.Rendered,
-                buffer: MTLCommandBuffer,
-                inputTexture: MTLTexture,
-                outputTexture: MTLTexture,
-                sample: Float,
-                time: Float) // TODO: Move into a new viewModel
+    func encode(_ payload: EffectsPayload)
 }
+
+/// `EffectsPayload` is defined in EffectsPayload.swift.
 
 extension Effect {
     // Core needs for a effect texture processor.

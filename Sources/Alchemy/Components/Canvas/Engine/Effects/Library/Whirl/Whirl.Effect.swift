@@ -25,17 +25,12 @@ struct Whirl: Effect {
     }
     
     
-    func encode(_ render: MuseVoice.Rendered,
-                buffer: MTLCommandBuffer,
-                 inputTexture: MTLTexture,
-                 outputTexture: MTLTexture,
-                 sample: Float = 1.0,
-                 time: Float = 0.0) {
+    func encode(_ payload: EffectsPayload) {
         guard let device = kernel.context.device else {
             fatalError("Could not initialize Effect.")
         }
         
-        guard let encoder = buffer.makeComputeCommandEncoder() else {
+        guard let encoder = payload.buffer.makeComputeCommandEncoder() else {
             fatalError("Could not create command encoder.")
         }
         
@@ -46,7 +41,7 @@ struct Whirl: Effect {
         // Make the buffer
         let floatBuffer = device.makeBuffer(length: MemoryLayout<Float>.size)
         
-        var mutableSample = sample
+        var mutableSample = payload.sample
         
         // Store the float value into the mtlbuffer directly
         floatBuffer?
@@ -56,7 +51,7 @@ struct Whirl: Effect {
         // Make the buffer
         let timeBuffer = device.makeBuffer(length: MemoryLayout<Float>.size)
         
-        var mutableTime = time
+        var mutableTime = payload.time
         
         // Store the float value into the mtlbuffer directly
         timeBuffer?
@@ -64,13 +59,13 @@ struct Whirl: Effect {
             .storeBytes(of: mutableTime, as: Float.self)
         
         encoder.setComputePipelineState(pipelineState)
-        encoder.setTexture(inputTexture, index: 0)
-        encoder.setTexture(outputTexture, index: 1)
+        encoder.setTexture(payload.inputTexture, index: 0)
+        encoder.setTexture(payload.outputTexture, index: 1)
         encoder.setBuffer(floatBuffer, offset: 0, index: 0)
         encoder.setBuffer(timeBuffer, offset: 0, index: 1)
         
-        let width = inputTexture.width
-        let height = inputTexture.height
+        let width = payload.inputTexture.width
+        let height = payload.inputTexture.height
 
         encoder
             .dispatchThreadgroups(
@@ -79,6 +74,6 @@ struct Whirl: Effect {
             )
         
         encoder.endEncoding()
-        buffer.commit()
+        payload.buffer.commit()
     }
 }

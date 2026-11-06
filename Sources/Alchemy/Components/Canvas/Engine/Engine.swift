@@ -87,16 +87,16 @@ class Engine {
             fatalError("Could not create output texture.")
         }
         
-        effects[effect]?
-            .encode(
-                render,
+        effects[effect]?.encode(
+            EffectsPayload(
+                render: render,
                 buffer: buffer,
                 inputTexture: texture,
                 outputTexture: nextOutput,
                 sample: time,
                 time: time
             )
-        
+        )
         
         buffer.waitUntilCompleted()
         
