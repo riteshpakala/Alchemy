@@ -3,22 +3,27 @@ import SwiftUI
 
 extension Home: View {
     public var view: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            header
-            WordsPatch(draft: center.$state.binding.draft, translate: translate)
-            SamplesPatch(
-                text: muse.state.text,
-                samples: muse.state.samples,
-                sampleRate: muse.state.sampleRate,
-                error: muse.state.lastError,
-                stitching: isStitching)
-                .frame(maxHeight: .infinity, alignment: .top)
-            
-            if muse.state.samples.isEmpty == false {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 20) {
+                header
+                WordsPatch(draft: center.$state.binding.draft, translate: translate)
+                
+                //            if muse.state.samples.isEmpty == false {
+                //                Canvas()
+                //            }
                 Canvas()
+                
+                SamplesPatch(
+                    text: muse.state.text,
+                    samples: muse.state.samples,
+                    sampleRate: muse.state.sampleRate,
+                    error: muse.state.lastError,
+                    stitching: isStitching)
+                .frame(maxHeight: .infinity, alignment: .top)
+                
             }
+            .padding(28)
         }
-        .padding(28)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .background {
             ZStack {

@@ -5,6 +5,7 @@ extension Canvas: View {
     public var view: some View {
         EmbroideredPatch("Canvas") {
             MetalViewUI(_state.model)
+                .frame(maxWidth: .infinity, minHeight: 200)
         }
     }
 }
