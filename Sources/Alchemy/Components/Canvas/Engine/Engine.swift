@@ -70,17 +70,9 @@ class Engine {
             fatalError("Could not create texture.")
         }
         
-        guard let encoder = buffer.makeComputeCommandEncoder() else {
-            fatalError("Could not create command encoder.")
-        }
-        
         // Load the whirl kernel from context.library
         guard let whirlKernel = context.library?.makeFunction(name: "whirl") else {
             fatalError("Could not find whirl kernel.")
-        }
-        
-        guard let pipelineState = try? device.makeComputePipelineState(function: whirlKernel) else {
-            fatalError("Could not create pipeline state.")
         }
         
         let timeBuffer = device.makeBuffer(length: MemoryLayout<Float>.size)
@@ -90,6 +82,7 @@ class Engine {
         
         while true {
             // Update time for animation
+            // "60fps"
             time += 0.016
             timeBuffer?.contents().storeBytes(of: time, as: Float.self)
             
