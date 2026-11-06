@@ -55,16 +55,9 @@ kernel void lantern(
     texture2d<float, access::write> outputTexture,
     device float* buffer [[buffer(0)]],
     constant float& time [[buffer(1)]],
-    uint gid [[thread_index_in_threadgroup]]
+    uint2 gid [[thread_position_in_grid]]
 ) {
-    if (gid >= outputTexture.get_width() * outputTexture.get_height()) {
-        return;
-    }
-    
-    uint x = gid % outputTexture.get_width();
-    uint y = gid / outputTexture.get_width();
-    
-    float2 uv = float2(x, y) / float2(outputTexture.get_width(), outputTexture.get_height());
+    float2 uv = float2(gid) / float2(outputTexture.get_width(), outputTexture.get_height());
     
     // Voronoi cell pattern for blot centers
     float cellNoise = voronoi2D(uv * 6.0 + float2(time * 0.1, time * 0.05));
@@ -124,5 +117,5 @@ kernel void lantern(
     
     float4 finalColor = float4(blendedRGB, alpha);
     
-    outputTexture.write(finalColor, uint2(x, y));
+    outputTexture.write(finalColor, gid);
 }

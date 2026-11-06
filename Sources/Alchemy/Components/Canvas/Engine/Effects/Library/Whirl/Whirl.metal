@@ -32,16 +32,9 @@ kernel void whirl(
     texture2d<float, access::write> outputTexture,
     device float* buffer [[buffer(0)]],
     constant float& time [[buffer(1)]],
-    uint gid [[thread_index_in_threadgroup]]
+    uint2 gid [[thread_position_in_grid]]
 ) {
-    if (gid >= outputTexture.get_width() * outputTexture.get_height()) {
-        return;
-    }
-    
-    uint x = gid % outputTexture.get_width();
-    uint y = gid / outputTexture.get_width();
-    
-    float2 uv = float2(x, y) / float2(outputTexture.get_width(), outputTexture.get_height());
+    float2 uv = float2(gid) / float2(outputTexture.get_width(), outputTexture.get_height());
     float2 center = float2(0.5, 0.5);
     
     // Polar coordinates from center
@@ -73,5 +66,5 @@ kernel void whirl(
     float blend = radius < 0.3 ? 0.3 * buffer[0] : 0.6 * buffer[0];
     float4 finalColor = float4(mix(color.rgb, rgb, blend), color.a);
     
-    outputTexture.write(finalColor, uint2(x, y));
+    outputTexture.write(finalColor, gid);
 }
