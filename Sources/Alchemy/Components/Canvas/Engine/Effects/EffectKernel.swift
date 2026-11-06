@@ -14,10 +14,10 @@ struct EffectKernel {
     var fragmentShaderName: String
     var pipelineFunction: MTLComputePipelineState?
     
-    init(context: MetalContext, fragmentShaderName: String) {
+    init(context: MetalContext, fragmentShaderName name: String) {
         self.context = context
         
-        if let pipelineFunction = context.library?.makeFunction(name: "whirl") {
+        if let pipelineFunction = context.library?.makeFunction(name: name) {
             
             self.pipelineFunction = try? context.device?
                 .makeComputePipelineState(
@@ -25,6 +25,6 @@ struct EffectKernel {
                 )
         }
         
-        self.fragmentShaderName = fragmentShaderName
+        self.fragmentShaderName = name
     }
 }

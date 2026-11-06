@@ -11,12 +11,21 @@ import MetalKit
 struct Whirl: Effect {
     var kernel: EffectKernel
     
-    init(context: MetalContext) {
-        self.kernel = .init(context: context, fragmentShaderName: "whirl")
+    init(_ context: MetalContext) {
+        self.kernel = .init(
+            context: context,
+            fragmentShaderName: Engine.Catalogue
+                .whirl.rawValue)
+    }
+    
+    func isEquals(_ kind: Engine.Catalogue) -> Bool {
+        kind.rawValue
+            .lowercased() == kernel.fragmentShaderName
+            .lowercased()
     }
     
     
-    func process(_ render: MuseVoice.Rendered,
+    func encode(_ render: MuseVoice.Rendered,
                  inputTexture: MTLTexture,
                  outputTexture: MTLTexture,
                  sample: Float = 1.0) {
@@ -57,8 +66,6 @@ struct Whirl: Effect {
             )
         
         encoder.endEncoding()
-        
         buffer.commit()
-        buffer.waitUntilCompleted()
     }
 }

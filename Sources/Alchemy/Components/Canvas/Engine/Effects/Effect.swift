@@ -10,7 +10,7 @@ import MetalKit
 
 protocol Effect {
     var kernel: EffectKernel { get set }
-    func process(_ render: MuseVoice.Rendered,
+    func encode(_ render: MuseVoice.Rendered,
                  inputTexture: MTLTexture,
                  outputTexture: MTLTexture,
                  sample: Float)
@@ -32,6 +32,4 @@ extension Effect {
         
         return nil
     }
-    
-    
 }

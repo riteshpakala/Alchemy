@@ -10,13 +10,30 @@ import SwiftUI
 import MetalKit
 
 class Engine {
+    enum Catalogue: String {
+        case whirl = "whirl"
+    }
     
     let context: MetalContext
+    var effects: [Engine.Catalogue: Effect]
+    
+    /*
+     
+     1. Host kernels. A collection of kernels.
+     2. Process hosts a kernel selection in MuseVoice.Rendered.
+     3. MetalView hosts the engine in coordinator.
+     4. Coordinator waits for a kernel selection to reach.
+     5. UpdateNSView propagates a kernel selection into coordinator from a binding.
+     
+     */
     
     // TODO: load the effect kernels into a catalogue of options
     
     init(context: MetalContext) {
         self.context = context
+        self.effects = [
+            .whirl : Whirl(context)
+        ]
     }
     
     // We want the engine to run a shader with a
@@ -31,7 +48,10 @@ class Engine {
     
     
     // TODO: Replace fatals with logs.
-    func process(_ render: MuseVoice.Rendered) {
+    func process(
+        _ render: MuseVoice.Rendered,
+        effect: Catalogue = .whirl
+    ) {
         guard let device = context.device else {
             fatalError("No device found.")
             return
@@ -50,8 +70,6 @@ class Engine {
             fatalError("Could not create texture.")
         }
         
-        let outputTexture = device.makeSimilarTexture(texture)
-        
         guard let encoder = buffer.makeComputeCommandEncoder() else {
             fatalError("Could not create command encoder.")
         }
@@ -65,39 +83,9 @@ class Engine {
             fatalError("Could not create pipeline state.")
         }
         
-        // Create two float buffers: sample and time
-        let sampleBuffer = device.makeBuffer(length: MemoryLayout<Float>.size)
         let timeBuffer = device.makeBuffer(length: MemoryLayout<Float>.size)
         
-        var mutableSample: Float = 1.0
-        var mutableTime: Float = 0.0
-        
-        // Store the float values into the mtlbuffers directly
-        sampleBuffer?.contents().storeBytes(of: mutableSample, as: Float.self)
-        timeBuffer?.contents().storeBytes(of: mutableTime, as: Float.self)
-        
-        encoder.setComputePipelineState(pipelineState)
-        encoder.setTexture(texture, index: 0)
-        encoder.setTexture(outputTexture, index: 1)
-        encoder.setBuffer(sampleBuffer, offset: 0, index: 0)
-        encoder.setBuffer(timeBuffer, offset: 0, index: 1)
-        
-        let width = texture.width
-        let height = texture.height
-        
-        encoder.dispatchThreadgroups(
-            .init(width: (width + 15) / 16, height: (height + 15) / 16, depth: 1),
-            threadsPerThreadgroup: .init(width: min(16, width), height: min(16, height), depth: 1)
-        )
-        
-        encoder.endEncoding()
-        
-        buffer.commit()
-        buffer.waitUntilCompleted()
-        
-        // Swap output to input for the next frame and loop with a timer
         var currentInput = texture
-        var currentOutput = outputTexture
         var time: Float = 0.0
         
         while true {
@@ -110,23 +98,15 @@ class Engine {
                 fatalError("Could not create output texture.")
             }
             
-            guard let encoder = buffer.makeComputeCommandEncoder() else {
-                fatalError("Could not create command encoder.")
-            }
+            effects[effect]?
+                .encode(
+                    render,
+                    inputTexture: currentInput,
+                    outputTexture: nextOutput,
+                    sample: time
+                )
             
-            encoder.setComputePipelineState(pipelineState)
-            encoder.setTexture(currentInput, index: 0)
-            encoder.setTexture(nextOutput, index: 1)
-            encoder.setBuffer(sampleBuffer, offset: 0, index: 0)
-            encoder.setBuffer(timeBuffer, offset: 0, index: 1)
             
-            encoder.dispatchThreadgroups(
-                .init(width: (currentInput.width + 15) / 16, height: (currentInput.height + 15) / 16, depth: 1),
-                threadsPerThreadgroup: .init(width: min(16, currentInput.width), height: min(16, currentInput.height), depth: 1)
-            )
-            
-            encoder.endEncoding()
-            buffer.commit()
             buffer.waitUntilCompleted()
             
             // Swap for next iteration
