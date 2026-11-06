@@ -15,15 +15,17 @@ struct EffectsPayload {
     let outputTexture: MTLTexture
     let sample: Float
     let time: Float
+    let sampleValue: Float
     
     /// Creates a new payload with the given fields replaced.
-    func updating(sample: Float? = nil, time: Float? = nil) -> EffectsPayload {
+    func updating(sample: Float? = nil, time: Float? = nil, sampleValue: Float? = nil) -> EffectsPayload {
         EffectsPayload(
             render: render,
             inputTexture: inputTexture,
             outputTexture: outputTexture,
             sample: sample ?? self.sample,
-            time: time ?? self.time
+            time: time ?? self.time,
+            sampleValue: sampleValue ?? self.sampleValue
         )
     }
 }

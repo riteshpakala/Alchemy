@@ -38,7 +38,7 @@ struct Lantern: Effect {
             fatalError("Could not find pipeline function.")
         }
         
-        // Make the buffer
+        // Make the buffer for sample (normalized frame 0.0–1.0)
         let floatBuffer = device.makeBuffer(length: MemoryLayout<Float>.size)
         
         let mutableSample = payload.sample
@@ -48,7 +48,7 @@ struct Lantern: Effect {
             .contents()
             .storeBytes(of: mutableSample, as: Float.self)
         
-        // Make the buffer
+        // Make the buffer for time (same as sample for now, both normalized frame)
         let timeBuffer = device.makeBuffer(length: MemoryLayout<Float>.size)
         
         let mutableTime = payload.time
@@ -58,11 +58,22 @@ struct Lantern: Effect {
             .contents()
             .storeBytes(of: mutableTime, as: Float.self)
         
+        // Make the buffer for sampleValue (the actual MuseVoice sample at the current frame index)
+        let sampleValueBuffer = device.makeBuffer(length: MemoryLayout<Float>.size)
+        
+        let mutableSampleValue = payload.sampleValue
+        
+        // Store the float value into the mtlbuffer directly
+        sampleValueBuffer?
+            .contents()
+            .storeBytes(of: mutableSampleValue, as: Float.self)
+        
         encoder.setComputePipelineState(pipelineState)
         encoder.setTexture(payload.inputTexture, index: 0)
         encoder.setTexture(payload.outputTexture, index: 1)
         encoder.setBuffer(floatBuffer, offset: 0, index: 0)
         encoder.setBuffer(timeBuffer, offset: 0, index: 1)
+        encoder.setBuffer(sampleValueBuffer, offset: 0, index: 2)
         
         
         

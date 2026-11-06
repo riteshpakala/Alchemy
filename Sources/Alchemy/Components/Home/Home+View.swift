@@ -8,18 +8,16 @@ extension Home: View {
                 header
                 WordsPatch(draft: center.$state.binding.draft, translate: translate)
                 
-                //            if muse.state.samples.isEmpty == false {
-                //                Canvas()
-                //            }
-                Canvas()
-                
-                SamplesPatch(
-                    text: muse.state.text,
-                    samples: muse.state.samples,
-                    sampleRate: muse.state.sampleRate,
-                    error: muse.state.lastError,
-                    stitching: isStitching)
-                .frame(maxHeight: .infinity, alignment: .top)
+                if muse.state.isReady {
+                    Canvas()
+                    SamplesPatch(
+                        text: muse.state.text,
+                        samples: muse.state.samples,
+                        sampleRate: muse.state.sampleRate,
+                        error: muse.state.lastError,
+                        stitching: isStitching)
+                        .frame(maxHeight: .infinity, alignment: .top)
+                }
                 
             }
             .padding(28)

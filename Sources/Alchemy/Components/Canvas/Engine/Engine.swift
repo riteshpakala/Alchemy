@@ -56,7 +56,9 @@ class Engine {
         _ render: MuseVoice.Rendered,
         inputTexture: MTLTexture? = nil,
         drawable: CAMetalDrawable? = nil,
-        effect: Catalogue = .lantern
+        effect: Catalogue = .lantern,
+        frame: Int = 0,
+        sampleValue: Float = 0.0
     ) {
         guard let device = context.device else {
             fatalError("No device found.")
@@ -80,25 +82,22 @@ class Engine {
             texture = baseTexture
         }
         
-//        let timeBuffer = device.makeBuffer(length: MemoryLayout<Float>.size)
-//        
-//        // Update time for animation
-//        // "60fps"
-//        time += 0.016
-//        timeBuffer?.contents().storeBytes(of: time, as: Float.self)
-        
-//         Create new output texture from current input
+        // Create new output texture from current input
         guard let nextOutput = drawable?.texture ?? device.makeSimilarTexture(texture) else {
             fatalError("Could not create output texture.")
         }
+        
+        // Normalize frame to 0.0–1.0 for shader time variable
+        let normalizedFrame = Float(frame) / 60.0
         
         effects[effect]?.encode(
             EffectsPayload(
                 render: render,
                 inputTexture: texture,
                 outputTexture: nextOutput,
-                sample: time,
-                time: time
+                sample: normalizedFrame,
+                time: normalizedFrame,
+                sampleValue: sampleValue
             )
         )
     }

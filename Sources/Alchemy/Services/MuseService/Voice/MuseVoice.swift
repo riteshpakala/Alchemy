@@ -29,14 +29,17 @@ import Foundation
 
 
 actor MuseVoice {
-
+    /// Should only be processed in MuseService.Translate
     final class Rendered: @unchecked Sendable {
         /// Mono, −1…1, limited to KokoroSeamDSP.ceiling (0.95).
         var samples: [Float]
         var sampleRate: Double
         var seconds: Double { Double(samples.count) / sampleRate }
         
-        init(samples: [Float], sampleRate: Double) {
+        init(
+            samples: [Float],
+            sampleRate: Double
+        ) {
             self.samples = samples
             self.sampleRate = sampleRate
         }

@@ -97,35 +97,48 @@ kernel void lantern(
     texture2d<float, access::write> outputTexture,
     device float* buffer [[buffer(0)]],
     constant float& time [[buffer(1)]],
+    device float* sampleValue [[buffer(2)]],
     uint2 gid [[thread_position_in_grid]]
 ) {
     float2 uv = float2(gid) / float2(outputTexture.get_width(), outputTexture.get_height());
     
-    // Voronoi cell pattern for blot centers with directional flow
-    float cellNoise = voronoi2D(uv * 6.0 + float2(time * 0.1, time * 0.05));
+    // Normalize frame to 0.0–1.0 for time-based animation
+    float frameNorm = time;  // Already normalized in Swift (frame / 60.0)
+    
+    // Get the current audio sample value from MuseVoice.Rendered
+    float audioSample = sampleValue[0];
+    
+    // Scale audio sample to a useful range for blot modulation (-1 to 1 mapped to 0–1)
+    float sampleMod = (audioSample + 1.0) * 0.5;  // Normalize to 0–1
+    
+    // Voronoi cell pattern for blot centers with directional flow driven by frame counter
+    float cellNoise = voronoi2D(uv * 6.0 + float2(frameNorm * 2.5, frameNorm * 1.2));
     float blotMask = smoothstep(0.4, 0.1, cellNoise);
     
     // Gradient-weighted directional blots for watercolor stroke paths
-    float2 flowCenter1 = float2(perlin2D(float2(time * 0.2, 0.3)) * 0.5 + 0.25,
-                                 perlin2D(float2(0.1, time * 0.15)) * 0.5 + 0.3);
-    float2 flowCenter2 = float2(perlin2D(float2(time * 0.15 + 1.7, 0.4)) * 0.5 + 0.6,
-                                 perlin2D(float2(0.2, time * 0.1 + 2.3)) * 0.5 + 0.5);
-    float2 flowCenter3 = float2(perlin2D(float2(time * 0.25 + 3.1, 0.2)) * 0.5 + 0.35,
-                                 perlin2D(float2(0.3, time * 0.18 + 4.1)) * 0.5 + 0.7);
+    // Frame counter drives the centers and scales, creating flowing river-like motion
+    float2 flowCenter1 = float2(perlin2D(float2(frameNorm * 5.0, 0.3 + sampleMod * 0.2)) * 0.5 + 0.25,
+                                 perlin2D(float2(0.1, frameNorm * 3.5 + audioSample * 0.1)) * 0.5 + 0.3);
+    float2 flowCenter2 = float2(perlin2D(float2(frameNorm * 4.0 + 1.7, 0.4 + sampleMod * 0.15)) * 0.5 + 0.6,
+                                 perlin2D(float2(0.2, frameNorm * 2.8 + audioSample * 0.08)) * 0.5 + 0.5);
+    float2 flowCenter3 = float2(perlin2D(float2(frameNorm * 5.5 + 3.1, 0.2 + sampleMod * 0.1)) * 0.5 + 0.35,
+                                 perlin2D(float2(0.3, frameNorm * 4.2 + audioSample * 0.12)) * 0.5 + 0.7);
     
-    float blot1 = directionalFlow(uv, flowCenter1, 0.25 + perlin2D(float2(time, 0.5)) * 0.1, time * 0.4);
-    float blot2 = directionalFlow(uv, flowCenter2, 0.2 + perlin2D(float2(time * 0.7, 0.8)) * 0.12, time * 0.35 + 1.7);
-    float blot3 = directionalFlow(uv, flowCenter3, 0.18 + perlin2D(float2(time * 0.5, 0.6)) * 0.08, time * 0.3 + 3.1);
+    float blot1 = directionalFlow(uv, flowCenter1, 0.25 + perlin2D(float2(frameNorm * 6.0, 0.5)) * 0.1 + sampleMod * 0.08, frameNorm * 4.0 + audioSample * 0.3);
+    float blot2 = directionalFlow(uv, flowCenter2, 0.2 + perlin2D(float2(frameNorm * 4.5, 0.8)) * 0.12 + sampleMod * 0.1, frameNorm * 3.2 + audioSample * 0.25 + 1.7);
+    float blot3 = directionalFlow(uv, flowCenter3, 0.18 + perlin2D(float2(frameNorm * 3.8, 0.6)) * 0.08 + sampleMod * 0.06, frameNorm * 2.8 + audioSample * 0.2 + 3.1);
     
     // Combine blots with gradient-weighted additive blending
     float combinedBlot = min(1.0, blot1 + blot2 * 0.7 + blot3 * 0.5);
     combinedBlot *= blotMask;
     
     // Gradient-weighted watercolor bleed: directional spread along flow paths
-    float bleedStrength = perlin2D(float2(uv.x * 4.0 + time * 0.3, uv.y * 4.0 + time * 0.2)) * 0.15;
+    // Frame counter and audio sample modulate bleed strength for flowing river effect
+    float bleedStrength = perlin2D(float2(uv.x * 4.0 + frameNorm * 6.0, uv.y * 4.0 + frameNorm * 4.5)) * 0.15;
+    bleedStrength += sampleMod * 0.1;  // Audio sample adds dynamic variation
     
-    // Directional bleed offset based on gradient flow
-    float flowAngle = atan2(perlin2D(uv * 3.0 + time * 0.2) - 0.5, perlin2D(uv * 3.0 + 1.7) - 0.5);
+    // Directional bleed offset based on gradient flow, animated by frame counter
+    float flowAngle = atan2(perlin2D(uv * 3.0 + frameNorm * 4.0) - 0.5, perlin2D(uv * 3.0 + 1.7 + audioSample * 0.15) - 0.5);
     float2 bleedDir = float2(cos(flowAngle), sin(flowAngle));
     float2 bleedOffset = bleedDir * bleedStrength * (0.5 + 0.5 * combinedBlot);
     
@@ -143,11 +156,12 @@ kernel void lantern(
     }
     
     // Watercolor palette: warm amber/gold lantern tones with subtle rainbow hints
-    float baseHue = 0.1 + perlin2D(float2(time * 0.05, 0.7)) * 0.1;
+    // Frame counter drives base hue for cycling color shifts
+    float baseHue = 0.1 + perlin2D(float2(frameNorm * 1.5, 0.7)) * 0.1 + sampleMod * 0.05;
     float3 lanternBase = hsvToRgb(float3(baseHue, 0.5, 0.95));
     
-    // Rainbow undertone that shifts with time and position
-    float rainbowHue = fract(time * 0.02 + uv.x * 0.3 + uv.y * 0.2);
+    // Rainbow undertone that shifts with frame counter and position for river-like flow
+    float rainbowHue = fract(frameNorm * 2.8 + uv.x * 0.3 + uv.y * 0.2 + audioSample * 0.1);
     float3 rainbowTint = hsvToRgb(float3(rainbowHue, 0.35, 0.85));
     
     // Gradient-weighted blending: stronger at blot centers, feathered at edges
@@ -160,12 +174,13 @@ kernel void lantern(
     blendedRGB += lanternBase * edgeGlow * buffer[0] * 0.5;
     
     // Paper texture grain overlay for authentic watercolor feel
-    float grain = paperGrain(uv, 8.0);
+    float grain = paperGrain(uv, 8.0 + frameNorm * 2.0);
     blendedRGB += lanternBase * grain * gradientBlend * 0.15;
     
     // Gradient-weighted transparency: darker where blots overlap, feathered at edges
+    // Audio sample modulates opacity for flowing river effect
     float alpha = color.a * (1.0 - combinedBlot * 0.3) + combinedBlot * 0.85;
-    alpha = mix(alpha, 1.0, combinedBlot * buffer[0] * 0.2);
+    alpha = mix(alpha, 1.0, combinedBlot * buffer[0] * 0.2 + sampleMod * 0.1);
     
     float4 finalColor = float4(blendedRGB, alpha);
     

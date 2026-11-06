@@ -11,10 +11,18 @@ extension MuseService {
             var sampleRate: Double = 24_000
             /// Why the last translate made nothing.
             var lastError: String?
+            
+            var isReady: Bool {
+                return samples.isEmpty == false
+            }
         }
         
         @Event var translate: Translate.Reducer
 
-        @Store public var state: State
+        @Store(
+            persist: "muse.service.0000",
+            autoSave: true,
+            preload: true
+        ) public var state: State
     }
 }
